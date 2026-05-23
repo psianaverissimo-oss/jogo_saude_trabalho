@@ -1,17 +1,14 @@
 import { useState } from 'react';
-// 1. NOVA ADIÇÃO: Importar o comunicador do Supabase
 import { createClient } from '@supabase/supabase-js';
 
-// 2. NOVA ADIÇÃO: Inicializar a ligação (usa as chaves do ficheiro .env)
+// Inicializar a ligação ao Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Base de dados com imagens corporate para demonstração imediata
 const perguntas = [
   {
     texto: "Sobrecarga de tarefas — o que fazes primeiro?",
-    // Imagem: Mãos a teclar rapidamente / muito trabalho
     imagem: "/1.webp",
     opcoes: [
       { texto: "Tento fazer tudo ao mesmo tempo", pontos: 0 },
@@ -20,8 +17,7 @@ const perguntas = [
     ]
   },
   {
-    texto: "Quando recebes um email com tom agressivo, como reages?",
-    // Imagem: Computador no escuro / tensão
+    texto: "Quando recebes um email com tom agressivo, como reactions?",
     imagem: "/2.webp",
     opcoes: [
       { texto: "Respondo imediatamente", pontos: 0 },
@@ -31,17 +27,15 @@ const perguntas = [
   },
   {
     texto: "Cansaço logo de manhã — como te sentes?",
-    // Imagem: Café matinal com ar de exaustão / letargia
     imagem: "/3.png",
     opcoes: [
       { texto: "Já começo o dia sem energia", pontos: 0 },
-      { texto: "Vou “aguentando” o dia apesar do cansaço", pontos: 1 },
+      { texto: "Vou “aguentando” the dia apesar do cansaço", pontos: 1 },
       { texto: "Consigo recuperar energia ao longo do dia", pontos: 2 }
     ]
   },
   {
     texto: "Desligar do trabalho — consegues?",
-    // Imagem: Pessoa relaxada / fora do ambiente de escritório
     imagem: "/4.avif",
     opcoes: [
       { texto: "Penso no trabalho à noite e no descanso", pontos: 0 },
@@ -51,7 +45,6 @@ const perguntas = [
   },
   {
     texto: "Pedidos extra de trabalho — como respondes?",
-    // Imagem: Secretária cheia de coisas / sobrecarga
     imagem: "/5.jpg",
     opcoes: [
       { texto: "Aceito mesmo sem querer", pontos: 0 },
@@ -61,7 +54,6 @@ const perguntas = [
   },
   {
     texto: "Falta de reconhecimento — como reages?",
-    // Imagem: Dinâmica de grupo onde alguém parece estar isolado
     imagem: "/6.png",
     opcoes: [
       { texto: "Fico desmotivado", pontos: 0 },
@@ -71,7 +63,6 @@ const perguntas = [
   },
   {
     texto: "Erras no trabalho — o que fazes?",
-    // Imagem: Frustração, pessoa em frente ao portátil a sentir a pressão
     imagem: "7.jpg",
     opcoes: [
       { texto: "Critico-me muito", pontos: 0 },
@@ -81,7 +72,6 @@ const perguntas = [
   },
   {
     texto: "Ritmo de trabalho — como é o teu dia?",
-    // Imagem: Pausa para alongar / respirar / ambiente calmo
     imagem: "/8.jpg",
     opcoes: [
       { texto: "Só paro quando estou exausto", pontos: 0 },
@@ -91,7 +81,6 @@ const perguntas = [
   },
   {
     texto: "Conflitos na equipa — como reages?",
-    // Imagem: Reunião tensa ou discussão de ideias
     imagem: "/9.webp",
     opcoes: [
       { texto: "Entro emocionalmente no conflito", pontos: 0 },
@@ -101,7 +90,6 @@ const perguntas = [
   },
   {
     texto: "Frase que mais te representa hoje",
-    // Imagem: Olhar para o horizonte ou corredor longo / jornada pesada
     imagem: "/10.webp",
     opcoes: [
       { texto: "“Tenho de aguentar”", pontos: 0 },
@@ -116,8 +104,6 @@ export default function App() {
   const [perguntaAtual, setPerguntaAtual] = useState(0);
   const [pontuacao, setPontuacao] = useState(0);
   const [email, setEmail] = useState('');
-  
-  // 3. NOVA ADIÇÃO: Estado para saber se estamos a enviar dados (evita duplo clique)
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const iniciarQuiz = () => setFase('quiz');
@@ -132,41 +118,42 @@ export default function App() {
     }
   };
 
-  // 4. NOVA ADIÇÃO: Função atualizada para atirar o e-mail para o Supabase
   const verResultadoFinal = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true); // Bloqueia o botão
+    setIsSubmitting(true);
 
     try {
-      // Tenta inserir na tua tabela 'quiz-trabalho'
+      // Modificado: Agora envia o email E o resultado (pontuação) para o Supabase
       const { error } = await supabase
         .from('quiz-trabalho')
-        .insert([{ email: email }]);
+        .insert([{ 
+          email: email, 
+          resultado: pontuacao 
+        }]);
 
       if (error) throw error;
       
-      // Sucesso! Avança de fase
       setFase('resultado');
     } catch (error) {
       console.error('Erro de telemetria:', error);
-      // Se a net falhar, o utilizador avança na mesma para não ficar preso
+      // Avança na mesma para não travar a experiência do utilizador caso haja erro de rede
       setFase('resultado');
     } finally {
-      setIsSubmitting(false); // Desbloqueia o botão
+      setIsSubmitting(false);
     }
   };
 
   const diagnostico = () => {
     if (pontuacao <= 6) return {
       titulo: "Modo sobrevivência emocional",
-      texto: "Estás em esforço constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio."
+      texto: "Estás em effort constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio."
     };
     if (pontuacao <= 13) return {
       titulo: "Esforço elevado",
       texto: "Estás a funcionar, mas com desgaste emocional acumulado. Existem sinais de tensão interna e dificuldade em desligar do trabalho, o que pode estar a afetar o teu bem-estar e estabilidade emocional ao longo do tempo."
     };
     return {
-      titulo: "Equilíbrio funcional",
+      titulo: "Equilíbrio functional",
       texto: "Estás a conseguir gerir o trabalho com algum equilíbrio. Ainda assim, existem momentos de pressão e desgaste que mostram que o teu sistema emocional precisa de atenção para evitar acumulação de stress."
     };
   };
@@ -174,19 +161,16 @@ export default function App() {
   const resultadoFinal = diagnostico();
 
   return (
-    // Fundo Bege Suave (#EAEAE1) extraído exatamente do teu logotipo
     <div className="min-h-screen bg-[#EAEAE1] text-gray-900 flex flex-col items-center justify-center p-4 font-sans">
       
-      {/* LANDING PAGE TOTALMENTE INTEGRADA */}
+      {/* LANDING PAGE */}
       {fase === 'landing' && (
         <div className="text-center max-w-xl w-full flex flex-col items-center anima-pergunta px-4">
-          
           <img 
             src="/logo.png" 
             alt="Ana Veríssimo Psicóloga" 
             className="w-full max-w-[450px] h-auto mb-10" 
           />
-
           <h1 className="text-3xl font-bold text-gray-950 mb-4 leading-tight">
             Autoavaliação Emocional no Trabalho
           </h1>
@@ -202,10 +186,9 @@ export default function App() {
         </div>
       )}
 
-      {/* QUIZ (Estilo Genially em Cartão Branco) */}
+      {/* QUIZ */}
       {fase === 'quiz' && (
         <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-gray-100 anima-pergunta">
-          
           <div className="w-full h-48 bg-gray-200 relative">
             <img 
               key={`img-${perguntaAtual}`}
@@ -219,11 +202,9 @@ export default function App() {
           </div>
           
           <div key={perguntaAtual} className="p-6 flex flex-col items-center text-center anima-pergunta">
-            
             <h2 className="text-xl font-bold text-gray-950 mb-6 leading-snug">
               {perguntas[perguntaAtual].texto}
             </h2>
-            
             <div className="flex flex-col gap-3 w-full">
               {perguntas[perguntaAtual].opcoes.map((opcao, index) => (
                 <button 
@@ -255,13 +236,11 @@ export default function App() {
               placeholder="O teu e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              // 5. NOVA ADIÇÃO: Bloqueia o input se estiver a enviar
               disabled={isSubmitting}
               className="w-full px-4 py-3.5 rounded-lg border border-gray-200 focus:border-[#4D6076] outline-none text-sm transition-all disabled:opacity-50"
             />
             <button 
               type="submit"
-              // 6. NOVA ADIÇÃO: Bloqueia o botão se estiver a enviar e muda o texto
               disabled={isSubmitting}
               className="bg-[#4D6076] text-white font-bold py-4 rounded-lg text-sm shadow-lg hover:opacity-95 transition-all disabled:opacity-50"
             >
@@ -272,10 +251,9 @@ export default function App() {
         </div>
       )}
 
-      {/* RESULTADOS OTIMIZADOS PARA MOBILE E MARKETING */}
+      {/* RESULTADOS OTIMIZADOS */}
       {fase === 'resultado' && (
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 anima-pergunta flex flex-col">
-          
           <div className="bg-[#4D6076] p-5 text-white flex items-center justify-between">
             <div className="pr-4">
               <h2 className="text-xl font-bold leading-tight">{resultadoFinal.titulo}</h2>
@@ -287,15 +265,14 @@ export default function App() {
           </div>
           
           <div className="p-5 flex flex-col gap-5">
-            
             <p className="text-gray-700 text-sm leading-relaxed">
               {resultadoFinal.texto}
             </p>
 
             <div className="bg-[#f2f2ed] border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-              
+              {/* Modificado: Contentor agora renderiza diretamente a imagem fim.jpeg */}
               <div className="w-full h-36 bg-gray-100 relative flex items-center justify-center border-b border-gray-100">
-                <span className="text-gray-500 text-sm font-medium">📸 [Imagem de apresentação]</span>
+                <img src="/fim.jpeg" alt="Imagem de fim" className="w-full h-full object-cover" />
               </div>
               
               <div className="p-4">
@@ -308,7 +285,7 @@ export default function App() {
 
                 <div className="flex flex-col gap-2">
                   <a 
-                    href="#" 
+                    href="https://wa.me/351913440424?text=Ol%C3%A1%20Ana!%20Fiz%20o%20question%C3%A1rio%20de%20sa%C3%BAde%20emocional%20e%20gostaria%20de%20marcar%20uma%20consulta." 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-[#4D6076] hover:opacity-95 text-white font-semibold px-4 py-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2 shadow-md"
@@ -316,9 +293,9 @@ export default function App() {
                     💬 Marcar Consulta (WhatsApp)
                   </a>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2">  
                     <a 
-                      href="#" 
+                      href="https://www.psi-anaverissimo.com" 
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-800 hover:bg-gray-950 text-white font-semibold px-4 py-3 rounded-lg text-sm transition-all flex-1 flex items-center justify-center gap-2 shadow-sm"
@@ -326,7 +303,7 @@ export default function App() {
                       🌐 Website
                     </a>
                     <a 
-                      href="#" 
+                      href="https://www.instagram.com/psi.anaverissimo" 
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white font-semibold px-4 py-3 rounded-lg text-sm transition-all flex-1 flex items-center justify-center shadow-sm"
