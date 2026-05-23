@@ -1,4 +1,11 @@
 import { useState } from 'react';
+// 1. NOVA ADIÇÃO: Importar o comunicador do Supabase
+import { createClient } from '@supabase/supabase-js';
+
+// 2. NOVA ADIÇÃO: Inicializar a ligação (usa as chaves do ficheiro .env)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Base de dados com imagens corporate para demonstração imediata
 const perguntas = [
@@ -108,7 +115,10 @@ export default function App() {
   const [fase, setFase] = useState('landing');
   const [perguntaAtual, setPerguntaAtual] = useState(0);
   const [pontuacao, setPontuacao] = useState(0);
-  const [email, setEmail] = useState(''); // O teu novo estado para o input
+  const [email, setEmail] = useState('');
+  
+  // 3. NOVA ADIÇÃO: Estado para saber se estamos a enviar dados (evita duplo clique)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const iniciarQuiz = () => setFase('quiz');
 
@@ -118,14 +128,32 @@ export default function App() {
     if (perguntaAtual + 1 < perguntas.length) {
       setPerguntaAtual(perguntaAtual + 1);
     } else {
-      setFase('leads'); // Corta para a fase de captação antes de entregar o ouro
+      setFase('leads');
     }
   };
 
-  const verResultadoFinal = (e) => {
-    e.preventDefault(); // Impede a página de fazer reload nativo ao submeter
-    // Onde futuramente podes ligar a uma API para guardar o e-mail
-    setFase('resultado');
+  // 4. NOVA ADIÇÃO: Função atualizada para atirar o e-mail para o Supabase
+  const verResultadoFinal = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true); // Bloqueia o botão
+
+    try {
+      // Tenta inserir na tua tabela 'quiz-trabalho'
+      const { error } = await supabase
+        .from('quiz-trabalho')
+        .insert([{ email: email }]);
+
+      if (error) throw error;
+      
+      // Sucesso! Avança de fase
+      setFase('resultado');
+    } catch (error) {
+      console.error('Erro de telemetria:', error);
+      // Se a net falhar, o utilizador avança na mesma para não ficar preso
+      setFase('resultado');
+    } finally {
+      setIsSubmitting(false); // Desbloqueia o botão
+    }
   };
 
   const diagnostico = () => {
@@ -153,7 +181,6 @@ export default function App() {
       {fase === 'landing' && (
         <div className="text-center max-w-xl w-full flex flex-col items-center anima-pergunta px-4">
           
-          {/* Logotipo: O fundo da imagem já coincide com o fundo da página, criando o blend perfeito. */}
           <img 
             src="/logo.png" 
             alt="Ana Veríssimo Psicóloga" 
@@ -168,7 +195,6 @@ export default function App() {
           </p>
           <button 
             onClick={iniciarQuiz}
-            // Botão Azul-Petróleo sóbrio extraído do ícone do cérebro
             className="bg-[#4D6076] hover:opacity-95 text-white px-10 py-3.5 rounded-full font-semibold transition-all shadow-md text-sm"
           >
             Começar Experiência
@@ -180,7 +206,6 @@ export default function App() {
       {fase === 'quiz' && (
         <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-gray-100 anima-pergunta">
           
-          {/* Zona de Imagem da Pergunta */}
           <div className="w-full h-48 bg-gray-200 relative">
             <img 
               key={`img-${perguntaAtual}`}
@@ -188,20 +213,17 @@ export default function App() {
               alt="Ilustração da pergunta" 
               className="w-full h-full object-cover anima-pergunta"
             />
-            {/* Contador de Perguntas Discreto sobre a imagem */}
             <div className="absolute top-3 right-3 bg-white/70 backdrop-blur-sm rounded-full px-3 py-1.5 text-[11px] font-bold text-gray-900 uppercase tracking-wider">
               {perguntaAtual + 1} / {perguntas.length}
             </div>
           </div>
           
-          {/* Zona de Conteúdo da Pergunta */}
           <div key={perguntaAtual} className="p-6 flex flex-col items-center text-center anima-pergunta">
             
             <h2 className="text-xl font-bold text-gray-950 mb-6 leading-snug">
               {perguntas[perguntaAtual].texto}
             </h2>
             
-            {/* Botões das Opções em Azul-Petróleo */}
             <div className="flex flex-col gap-3 w-full">
               {perguntas[perguntaAtual].opcoes.map((opcao, index) => (
                 <button 
@@ -233,13 +255,17 @@ export default function App() {
               placeholder="O teu e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-lg border border-gray-200 focus:border-[#4D6076] outline-none text-sm transition-all"
+              // 5. NOVA ADIÇÃO: Bloqueia o input se estiver a enviar
+              disabled={isSubmitting}
+              className="w-full px-4 py-3.5 rounded-lg border border-gray-200 focus:border-[#4D6076] outline-none text-sm transition-all disabled:opacity-50"
             />
             <button 
               type="submit"
-              className="bg-[#4D6076] text-white font-bold py-4 rounded-lg text-sm shadow-lg hover:opacity-95 transition-all"
+              // 6. NOVA ADIÇÃO: Bloqueia o botão se estiver a enviar e muda o texto
+              disabled={isSubmitting}
+              className="bg-[#4D6076] text-white font-bold py-4 rounded-lg text-sm shadow-lg hover:opacity-95 transition-all disabled:opacity-50"
             >
-              Avançar para o Resultado
+              {isSubmitting ? 'A processar...' : 'Avançar para o Resultado'}
             </button>
             <p className="text-[10px] text-gray-400 mt-2 italic">Prometemos cuidar do teu e-mail com a mesma calma que cuidamos da mente.</p>
           </form>
@@ -250,37 +276,28 @@ export default function App() {
       {fase === 'resultado' && (
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 anima-pergunta flex flex-col">
           
-          {/* Topo Compacto: Diagnóstico e Pontuação em Azul-Petróleo */}
           <div className="bg-[#4D6076] p-5 text-white flex items-center justify-between">
             <div className="pr-4">
               <h2 className="text-xl font-bold leading-tight">{resultadoFinal.titulo}</h2>
             </div>
-            {/* O bloco da pontuação agora é uma "etiqueta" discreta mas visível */}
             <div className="bg-white/10 rounded-xl px-4 py-2 flex flex-col items-center justify-center shrink-0">
               <span className="text-3xl font-extrabold">{pontuacao}</span>
               <span className="text-[10px] font-medium uppercase tracking-wider opacity-80 mt-1">Pontos</span>
             </div>
           </div>
           
-          {/* Corpo do Cartão - Margens reduzidas (p-5) para evitar scroll */}
           <div className="p-5 flex flex-col gap-5">
             
-            {/* Texto do Diagnóstico base */}
             <p className="text-gray-700 text-sm leading-relaxed">
               {resultadoFinal.texto}
             </p>
 
-            {/* ZONA DE MARKETING / CALL TO ACTION (CTA) com fundo suave (#f2f2ed) */}
             <div className="bg-[#f2f2ed] border border-gray-100 rounded-xl overflow-hidden shadow-sm">
               
-              {/* Placeholder da Imagem de Conversão */}
               <div className="w-full h-36 bg-gray-100 relative flex items-center justify-center border-b border-gray-100">
                 <span className="text-gray-500 text-sm font-medium">📸 [Imagem de apresentação]</span>
-                {/* Quando tiveres a foto real, apagas o <span> acima e tiras os comentários da linha abaixo: */}
-                {/* <img src="/consulta.jpg" alt="Consulta Online" className="absolute inset-0 w-full h-full object-cover" /> */}
               </div>
               
-              {/* Texto de Conversão */}
               <div className="p-4">
                 <p className="text-[15px] text-gray-950 font-bold mb-2 leading-tight">
                   Isto não é apenas “stress do trabalho”.
@@ -289,9 +306,7 @@ export default function App() {
                   Se te identificaste com estes níveis, é um sinal de esforço emocional contínuo. Podes aprofundar isto comigo em consulta online e trabalhar formas de recuperar o teu equilíbrio diário.
                 </p>
 
-                {/* Botões Organizados para Mobile em Azul-Petróleo */}
                 <div className="flex flex-col gap-2">
-                  {/* WhatsApp - Botão Primário */}
                   <a 
                     href="#" 
                     target="_blank"
@@ -301,7 +316,6 @@ export default function App() {
                     💬 Marcar Consulta (WhatsApp)
                   </a>
                   
-                  {/* Website e Instagram - Secundários Lado a Lado */}
                   <div className="flex gap-2">
                     <a 
                       href="#" 
