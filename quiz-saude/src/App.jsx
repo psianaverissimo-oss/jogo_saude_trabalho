@@ -17,7 +17,7 @@ const perguntas = [
     ]
   },
   {
-    texto: "Quando recebes um email com tom agressivo, como reactions?",
+    texto: "Quando recebes um email com tom agressivo, como reages?",
     imagem: "/2.webp",
     opcoes: [
       { texto: "Respondo imediatamente", pontos: 0 },
@@ -30,7 +30,7 @@ const perguntas = [
     imagem: "/3.png",
     opcoes: [
       { texto: "Já começo o dia sem energia", pontos: 0 },
-      { texto: "Vou “aguentando” the dia apesar do cansaço", pontos: 1 },
+      { texto: "Vou “aguentando” o dia apesar do cansaço", pontos: 1 },
       { texto: "Consigo recuperar energia ao longo do dia", pontos: 2 }
     ]
   },
