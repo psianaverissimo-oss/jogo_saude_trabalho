@@ -1,6 +1,4 @@
-import { useState } from 'react';
-
-// Foram removidas as importações do Supabase, já não precisamos delas!
+import { useState, useEffect } from 'react';
 
 const perguntas = [
   {
@@ -13,7 +11,7 @@ const perguntas = [
     ]
   },
   {
-    texto: "Quando recebes um email com tom agressivo, como reages?", // Corrigido de "reactions"
+    texto: "Quando recebes um email com tom agressivo, como reages?",
     imagem: "/2.webp",
     opcoes: [
       { texto: "Respondo imediatamente", pontos: 0 },
@@ -26,7 +24,7 @@ const perguntas = [
     imagem: "/3.png",
     opcoes: [
       { texto: "Já começo o dia sem energia", pontos: 0 },
-      { texto: "Vou \"aguentando\" o dia apesar do cansaço", pontos: 1 }, // Corrigido de "the dia"
+      { texto: "Vou “aguentando” o dia apesar do cansaço", pontos: 1 },
       { texto: "Consigo recuperar energia ao longo do dia", pontos: 2 }
     ]
   },
@@ -102,6 +100,19 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    perguntas.forEach((pergunta) => {
+      const img = new Image();
+      img.src = pergunta.imagem;
+    });
+    
+    const imgFim = new Image();
+    imgFim.src = "/fim.jpeg";
+    
+    const logo = new Image();
+    logo.src = "/logo.png";
+  }, []);
+
   const iniciarQuiz = () => setFase('quiz');
 
   const responder = (pontosDaOpcao) => {
@@ -114,18 +125,17 @@ export default function App() {
     }
   };
 
-  // Movi o diagnóstico para cima para o podermos usar na hora de enviar o formulário
   const diagnostico = () => {
     if (pontuacao <= 6) return {
       titulo: "Modo sobrevivência emocional",
-      texto: "Estás em esforço constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio." // Corrigido de "effort"
+      texto: "Estás em esforço constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio."
     };
     if (pontuacao <= 13) return {
       titulo: "Esforço elevado",
       texto: "Estás a funcionar, mas com desgaste emocional acumulado. Existem sinais de tensão interna e dificuldade em desligar do trabalho, o que pode estar a afetar o teu bem-estar e estabilidade emocional ao longo do tempo."
     };
     return {
-      titulo: "Equilíbrio funcional", // Corrigido de "functional"
+      titulo: "Equilíbrio funcional",
       texto: "Estás a conseguir gerir o trabalho com algum equilíbrio. Ainda assim, existem momentos de pressão e desgaste que mostram que o teu sistema emocional precisa de atenção para evitar acumulação de stress."
     };
   };
@@ -137,10 +147,8 @@ export default function App() {
     setIsSubmitting(true);
 
     try {
-      // Nova ligação direta à API do Google Sheets
       const scriptUrl = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
-      // O mode 'no-cors' é o truque para não haver bloqueios de segurança entre o site e a Google
       await fetch(scriptUrl, {
         method: 'POST',
         mode: 'no-cors',
@@ -156,8 +164,7 @@ export default function App() {
 
       setFase('resultado');
     } catch (error) {
-      console.error('Erro de telemetria:', error);
-      // Avança na mesma para não travar a experiência do utilizador
+      console.error(error);
       setFase('resultado');
     } finally {
       setIsSubmitting(false);
@@ -167,7 +174,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#EAEAE1] text-gray-900 flex flex-col items-center justify-center p-4 font-sans">
       
-      {/* LANDING PAGE */}
       {fase === 'landing' && (
         <div className="text-center max-w-xl w-full flex flex-col items-center anima-pergunta px-4">
           <img 
@@ -190,7 +196,6 @@ export default function App() {
         </div>
       )}
 
-      {/* QUIZ */}
       {fase === 'quiz' && (
         <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-gray-100 anima-pergunta">
           <div className="w-full h-48 bg-gray-200 relative">
@@ -224,7 +229,6 @@ export default function App() {
         </div>
       )}
 
-      {/* FORMULÁRIO DE CAPTAÇÃO DE LEADS */}
       {fase === 'leads' && (
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100 anima-pergunta text-center">
           <div className="text-[#4D6076] text-3xl mb-4">✨</div>
@@ -255,7 +259,6 @@ export default function App() {
         </div>
       )}
 
-      {/* RESULTADOS OTIMIZADOS */}
       {fase === 'resultado' && (
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 anima-pergunta flex flex-col">
           <div className="bg-[#4D6076] p-5 text-white flex items-center justify-between">
