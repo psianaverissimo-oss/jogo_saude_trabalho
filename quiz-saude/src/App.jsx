@@ -1,10 +1,6 @@
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 
-// Inicializar a ligação ao Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Foram removidas as importações do Supabase, já não precisamos delas!
 
 const perguntas = [
   {
@@ -17,7 +13,7 @@ const perguntas = [
     ]
   },
   {
-    texto: "Quando recebes um email com tom agressivo, como reages?",
+    texto: "Quando recebes um email com tom agressivo, como reages?", // Corrigido de "reactions"
     imagem: "/2.webp",
     opcoes: [
       { texto: "Respondo imediatamente", pontos: 0 },
@@ -30,7 +26,7 @@ const perguntas = [
     imagem: "/3.png",
     opcoes: [
       { texto: "Já começo o dia sem energia", pontos: 0 },
-      { texto: "Vou “aguentando” o dia apesar do cansaço", pontos: 1 },
+      { texto: "Vou \"aguentando\" o dia apesar do cansaço", pontos: 1 }, // Corrigido de "the dia"
       { texto: "Consigo recuperar energia ao longo do dia", pontos: 2 }
     ]
   },
@@ -118,47 +114,55 @@ export default function App() {
     }
   };
 
-  const verResultadoFinal = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Modificado: Agora envia o email E o resultado (pontuação) para o Supabase
-      const { error } = await supabase
-        .from('quiz-trabalho')
-        .insert([{ 
-          email: email, 
-          resultado: pontuacao 
-        }]);
-
-      if (error) throw error;
-      
-      setFase('resultado');
-    } catch (error) {
-      console.error('Erro de telemetria:', error);
-      // Avança na mesma para não travar a experiência do utilizador caso haja erro de rede
-      setFase('resultado');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // Movi o diagnóstico para cima para o podermos usar na hora de enviar o formulário
   const diagnostico = () => {
     if (pontuacao <= 6) return {
       titulo: "Modo sobrevivência emocional",
-      texto: "Estás em effort constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio."
+      texto: "Estás em esforço constante no trabalho. O teu sistema emocional pode estar em sobrecarga, o que afeta a tua energia, foco e capacidade de recuperação. Neste momento, estás mais em “aguentar” do que em viver o trabalho com equilíbrio." // Corrigido de "effort"
     };
     if (pontuacao <= 13) return {
       titulo: "Esforço elevado",
       texto: "Estás a funcionar, mas com desgaste emocional acumulado. Existem sinais de tensão interna e dificuldade em desligar do trabalho, o que pode estar a afetar o teu bem-estar e estabilidade emocional ao longo do tempo."
     };
     return {
-      titulo: "Equilíbrio functional",
+      titulo: "Equilíbrio funcional", // Corrigido de "functional"
       texto: "Estás a conseguir gerir o trabalho com algum equilíbrio. Ainda assim, existem momentos de pressão e desgaste que mostram que o teu sistema emocional precisa de atenção para evitar acumulação de stress."
     };
   };
 
   const resultadoFinal = diagnostico();
+
+  const verResultadoFinal = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Nova ligação direta à API do Google Sheets
+      const scriptUrl = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+
+      // O mode 'no-cors' é o truque para não haver bloqueios de segurança entre o site e a Google
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          pontuacao: pontuacao,
+          diagnostico: resultadoFinal.titulo
+        })
+      });
+
+      setFase('resultado');
+    } catch (error) {
+      console.error('Erro de telemetria:', error);
+      // Avança na mesma para não travar a experiência do utilizador
+      setFase('resultado');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#EAEAE1] text-gray-900 flex flex-col items-center justify-center p-4 font-sans">
@@ -270,7 +274,6 @@ export default function App() {
             </p>
 
             <div className="bg-[#f2f2ed] border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-              {/* Modificado: Contentor agora renderiza diretamente a imagem fim.jpeg */}
               <div className="w-full h-36 bg-gray-100 relative flex items-center justify-center border-b border-gray-100">
                 <img src="/fim.jpeg" alt="Imagem de fim" className="w-full h-full object-cover" />
               </div>
